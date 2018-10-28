@@ -136,11 +136,14 @@ var npmInstallQuick = async function (options) {
         }
     });
 
-    var spawnWrtProjectRoot = async function (app, params) {
+    var spawnWrtProjectRoot = async function (app, params, options = {}) {
         var cwd = projectRoot,
             exitCode = await spawn(app, params, { cwd });
         if (exitCode) {
             console.log('Exit code: ' + exitCode);
+            if (options.bailOnError) {
+                exitWithError('Error: The last command did not execute successfully');
+            }
         }
         return exitCode;
     };
@@ -167,16 +170,16 @@ var npmInstallQuick = async function (options) {
         var directoryName = path.basename(nodeModulesBackupFilePath).split('.tar.gz')[0],
             directoryPathWrtProjectRoot = path.resolve(archiveDirectory, directoryName);
 
-        await spawnWrtProjectRoot('sh', ['-c', 'mkdir -p "' + directoryPathWrtProjectRoot + '"']);
-        await spawnWrtProjectRoot('sh', ['-c', 'tar -xzf "' + nodeModulesBackupFilePath + '" --directory "' + directoryPathWrtProjectRoot + '"']);
+        await spawnWrtProjectRoot('sh', ['-c', 'mkdir -p "' + directoryPathWrtProjectRoot + '"'], { bailOnError: true });
+        await spawnWrtProjectRoot('sh', ['-c', 'tar -xzf "' + nodeModulesBackupFilePath + '" --directory "' + directoryPathWrtProjectRoot + '"'], { bailOnError: true });
 
         // TODO: Rather than removing node_modules, rename that directory to some temporary name
         //       and once the next step of moving the restored node_modules is done, then
         //       remove the directory
-        await spawnWrtProjectRoot('sh', ['-c', 'rm -rf node_modules']);
-        await spawnWrtProjectRoot('sh', ['-c', 'mv "' + directoryPathWrtProjectRoot + '/node_modules" ./']);
+        await spawnWrtProjectRoot('sh', ['-c', 'rm -rf node_modules'], { bailOnError: true });
+        await spawnWrtProjectRoot('sh', ['-c', 'mv "' + directoryPathWrtProjectRoot + '/node_modules" ./'], { bailOnError: true });
 
-        await spawnWrtProjectRoot('sh', ['-c', 'rm -rf "' + directoryPathWrtProjectRoot + '"']);
+        await spawnWrtProjectRoot('sh', ['-c', 'rm -rf "' + directoryPathWrtProjectRoot + '"'], { bailOnError: true });
     };
 
     var fileExistsRelativeToProjectRoot = function (file) {
@@ -186,6 +189,7 @@ var npmInstallQuick = async function (options) {
 
     var getNodeModulesBackupFilePath = async function (options) {
         var { projectRoot, projectName, archiveDirectory } = options;
+        projectName = projectName.replace(/\//g, '-');  // Some packages have names like: @user/package-name ; We replace "/" with "-" to ensure that subfolders don't get created by mistake
         var stakeholdersHash = await generateStakeholdersHash({projectRoot}),
             nodeModulesBackupFilePath = path.resolve(projectRoot, archiveDirectory, projectName + '-node_modules-' + stakeholdersHash + '.tar.gz');
         return nodeModulesBackupFilePath;
@@ -198,6 +202,10 @@ var npmInstallQuick = async function (options) {
         return projectName;
     }(projectRoot));
 
+    if (!fileExistsRelativeToProjectRoot('package.json')) {
+        exitWithError('Error: ' + path.resolve(projectRoot, 'package.json') + ' does not exist');
+    }
+
     var nodeModulesBackupFilePath = await getNodeModulesBackupFilePath({projectRoot, projectName, archiveDirectory});
     var warningOccurred = false;
 
@@ -205,21 +213,21 @@ var npmInstallQuick = async function (options) {
         var sizeOccupiedByArchiveDirectory = await getSizeOfItemAtGivenPath(path.dirname(nodeModulesBackupFilePath));
         if (sizeOccupiedByArchiveDirectory === null) {
             warningOccurred = true;
-            console.log('Warning: The size occupied by the node_modules archive directory is NOT AVAILABLE.');
+            showWarningMessage('Warning: The size occupied by the node_modules archive directory is NOT AVAILABLE');
         } else {
-            console.log('Info: The size occupied by the node_modules archive directory is ' + humanReadableByteSize(sizeOccupiedByArchiveDirectory) + '.');
+            console.log('Info: The size occupied by the node_modules archive directory is ' + humanReadableByteSize(sizeOccupiedByArchiveDirectory));
         }
 
         var freePartitionSpaceInBytes = await getFreeDiskSpaceOfPartitionForPath(path.dirname(nodeModulesBackupFilePath));
         if (freePartitionSpaceInBytes === null) {
-            showWarningMessage('Warning: Could not get information about the free disk space for the partition where node_modules archive is expected to be backed up.');
+            showWarningMessage('Warning: Could not get information about the free disk space for the partition where node_modules archive is expected to be backed up');
             warningOccurred = true;
         } else {
             if (freePartitionSpaceInBytes < showDiskSpaceWarningBelow) {
-                showWarningMessage('Warning: The available disk space for the partition containing node_modules archive directory is ' + humanReadableByteSize(freePartitionSpaceInBytes) + '.');
+                showWarningMessage('Warning: The available disk space for the partition containing node_modules archive directory is ' + humanReadableByteSize(freePartitionSpaceInBytes));
                 warningOccurred = true;
             } else {
-                console.log('Info: The available disk space for the partition containing node_modules archive directory is ' + humanReadableByteSize(freePartitionSpaceInBytes) + '.');
+                console.log('Info: The available disk space for the partition containing node_modules archive directory is ' + humanReadableByteSize(freePartitionSpaceInBytes));
             }
         }
     }
@@ -289,16 +297,16 @@ var npmInstallQuick = async function (options) {
             exitCode = await backupNodeModulesIfRequired(nodeModulesBackupFilePath);
             if (exitCode) {
                 warningOccurred = true;
-                console.log('Warning: Could not backup the node_modules contents.');
+                showWarningMessage('Warning: Could not backup the node_modules contents');
             }
         } else {
-            exitWithError('Error: Could not run npm installation.');
+            exitWithError('Error: Could not run npm installation');
         }
     }
 
     console.log('');
     if (warningOccurred) {
-        console.log(' ? Please note the warning(s) mentioned above.');
+        console.log(' ? Please note the warning(s) mentioned above');
     }
     console.log(' ✓ Success\n');
 };
@@ -306,7 +314,23 @@ var npmInstallQuick = async function (options) {
 if (!module.parent) {
     npmInstallQuick({
         argv: process.argv,
-        projectRoot: process.cwd(),
+        projectRoot: (function () {
+            var nodeParents = require('./utils/3rdparty/node-parents/node-parents.js');
+
+            var cwd = process.cwd(),
+                pathsToLookForPackageJson = nodeParents(cwd);
+
+            var packageJsonFoundAtPath = pathsToLookForPackageJson.find(function (pathToLookForPackageJson) {
+                if (fs.existsSync(path.resolve(pathToLookForPackageJson, 'package.json'))) {
+                    return true;
+                }
+            });
+            if (packageJsonFoundAtPath) {
+                return packageJsonFoundAtPath;
+            } else {
+                return cwd;
+            }
+        }()),
         // projectRoot: path.resolve(__dirname, '..'),
         archiveDirectory: '/var/tmp/npm-install-quick/archive',     // Use such a path to keep the archived node_modules contents in a shared temporary folder
         // archiveDirectory: 'node_modules-archive/archive',        // Use such a path to keep the archived node_modules contents within the project directory
