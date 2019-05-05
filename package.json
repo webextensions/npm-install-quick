@@ -41,7 +41,7 @@
   },
   "homepage": "https://github.com/webextensions/npm-install-quick#readme",
   "devDependencies": {
-    "eslint": "^5.8.0",
-    "mocha": "^5.2.0"
+    "eslint": "^5.16.0",
+    "mocha": "^6.1.4"
   }
 }
