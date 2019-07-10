@@ -17,6 +17,17 @@ var lockedVersionsSatisfy = function (intendedDependencies = {}, installedDepend
             installedDependency = installedDependencies[key];
         if (installedDependency && semver.satisfies(installedDependency.version, intendedDependency)) {
             return true;
+        } else if (
+            !semver.valid(installedDependency.version) &&
+            !semver.valid(intendedDependency) &&
+            installedDependency.version === intendedDependency
+        ) {
+            // To handle cases like "package.json" installing dependency from GitHub.
+            // For example:
+            //     "dependencies": {
+            //         "npm-install-quick": "github:webextensions/npm-install-quick#3ecc1047c8c76d3c623f329116c7cfebf39b97ce"
+            //     }
+            return true;
         } else {
             return false;
         }
