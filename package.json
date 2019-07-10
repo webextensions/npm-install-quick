@@ -1,6 +1,6 @@
 {
   "name": "npm-install-quick",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "Script for quick npm installation (archive node_modules directory and reuse). Helpful when you work on multiple branches.",
   "main": "npm-install-quick/lib/main.js",
   "bin": {
