@@ -68,7 +68,7 @@ var humanReadableByteSize = function (sizeInB) {
             return size + ' bytes';
         }
 
-        var arrUnits = ['KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'];
+        var arrUnits = ['KiB', 'MiB', 'GiB', 'TiB', 'PiB', 'EiB', 'ZiB', 'YiB'];
         var i;
         for (i = 0; i < arrUnits.length; i++) {
             size = size / 1024;
