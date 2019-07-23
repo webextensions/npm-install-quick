@@ -11,6 +11,8 @@ var generateStakeholdersHash = require('./utils/generateHashFromStakeholders.js'
 
 var { spawn, exec } = require('./utils/run-command.js');
 
+var nodeParents = require('./utils/3rdparty/node-parents/node-parents.js');
+
 var lockedVersionsSatisfy = function (intendedDependencies = {}, installedDependencies = {}) {
     var allVersionsSatisfied = Object.keys(intendedDependencies).every(function (key) {
         var intendedDependency = intendedDependencies[key],
@@ -114,6 +116,68 @@ var getSizeOfItemAtGivenPath = async function (itemPath) {
     return sizeInBytes;
 };
 
+// Note:
+// This function works well for the practical use-cases.
+// It may not result in correct answer for ill-formed .nvmrc files
+var doNvmrcAndNodeVersionAppearToMatch = function (nvmrcVersion, nodeVersion) {
+    var nodeVersionArr = nodeVersion.split('.');
+    var nodeVersionStrOb = {
+        major: nodeVersionArr[0],
+        minor: nodeVersionArr[1],
+        patch: nodeVersionArr[2]
+    };
+    var nodeVersionIntOb = {
+        major: parseInt(nodeVersionStrOb.major, 10),
+        minor: parseInt(nodeVersionStrOb.minor, 10),
+        patch: parseInt(nodeVersionStrOb.patch, 10)
+    };
+
+    if (nvmrcVersion.charAt(0) === 'v') {
+        nvmrcVersion = nvmrcVersion.substr(1);
+    }
+    var nvmrcVersionArr = nvmrcVersion.split('.');
+    var nvmrcVersionStrOb = {
+        major: nvmrcVersionArr[0],
+        minor: nvmrcVersionArr[1],
+        patch: nvmrcVersionArr[2]
+    };
+    var nvmrcVersionIntOb = {
+        major: parseInt(nvmrcVersionStrOb.major, 10),
+        minor: parseInt(nvmrcVersionStrOb.minor, 10),
+        patch: parseInt(nvmrcVersionStrOb.patch, 10)
+    };
+
+    var nvmrcAndNodeVersionMatch = true;
+    if (isNaN(nvmrcVersionIntOb.major)) {
+        // do nothing
+    } else {
+        if (nvmrcVersionIntOb.major === nodeVersionIntOb.major) {
+            if (nvmrcVersionStrOb.minor === '' || nvmrcVersionStrOb.minor === undefined) {
+                // do nothing
+            } else {
+                if (nvmrcVersionIntOb.minor === nodeVersionIntOb.minor) {
+                    if (nvmrcVersionStrOb.patch === '' || nvmrcVersionStrOb.patch === undefined) {
+                        // do nothing
+                    } else {
+                        if (nvmrcVersionIntOb.patch === nodeVersionIntOb.patch) {
+                            // do nothing
+                        } else {
+                            console.log(nvmrcVersionStrOb.patch);
+                            nvmrcAndNodeVersionMatch = false;
+                        }
+                    }
+                } else {
+                    nvmrcAndNodeVersionMatch = false;
+                }
+            }
+        } else {
+            nvmrcAndNodeVersionMatch = false;
+        }
+    }
+
+    return nvmrcAndNodeVersionMatch;
+};
+
 var exitWithError = function (msg) {
     if (msg) {
         console.log(msg);
@@ -122,13 +186,20 @@ var exitWithError = function (msg) {
     process.exit(1);
 };
 
-var showWarningMessage = function (msg) {
-    console.warn('');
-    console.warn('    ' + '*'.repeat(msg.length + 4));
-    console.warn('    *' + ' '.repeat(msg.length + 2) + '*');
-    console.warn('    ' + '* ' + msg + ' *');
-    console.warn('    *' + ' '.repeat(msg.length + 2) + '*');
-    console.warn('    ' + '*'.repeat(msg.length + 4));
+var showImportantMessage = function (msg) {
+    var arrMsg = msg.split('\n');
+
+    // https://stackoverflow.com/questions/6521245/finding-longest-string-in-array/6521513#6521513
+    var longestString = arrMsg.reduce(function (a, b) { return a.length > b.length ? a : b; });
+
+    console.log('');
+    console.log('    ' + '*'.repeat(longestString.length + 4));
+    console.log('    *' + ' '.repeat(longestString.length + 2) + '*');
+    for (var i = 0; i < arrMsg.length; i++) {
+        console.log('    ' + '* ' + arrMsg[i] + ' '.repeat(longestString.length - arrMsg[i].length) + ' *');
+    }
+    console.log('    *' + ' '.repeat(longestString.length + 2) + '*');
+    console.log('    ' + '*'.repeat(longestString.length + 4));
 };
 
 var showHelp = function () {
@@ -153,6 +224,8 @@ var showHelp = function () {
         '     --package-lock-must-be-in-sync-when-available',
         '                                     If package-lock.json exists, then it must be in sync',
         '                                     with package.json',
+        '     --ignore-node-nvmrc-mismatch    If .nvmrc file exists (with simple number format), then',
+        '                                     the current Node JS version in use must match it',
         '  -h --help                          Show help',
         ''
     ].join('\n'));
@@ -177,6 +250,43 @@ var npmInstallQuick = async function (options) {
     if (passedArguments['--help'] || passedArguments['-h']) {
         showHelp();
         process.exit(0);
+    }
+
+    if (passedArguments['--ignore-node-nvmrc-mismatch']) {
+        // do nothing
+    } else {
+        var lookForNvmrcFileForDirectory = projectRoot,
+            pathsToLookForNvmrc = nodeParents(lookForNvmrcFileForDirectory);
+
+        var nvmrcFoundAtPath = pathsToLookForNvmrc.find(function (pathToLookForNvmrc) {
+            if (fs.existsSync(path.resolve(pathToLookForNvmrc, '.nvmrc'))) {
+                return true;
+            }
+        });
+
+        if (nvmrcFoundAtPath) {
+            var nvmrcFilePath = path.resolve(nvmrcFoundAtPath, '.nvmrc'),
+                nvmrcContents = fs.readFileSync(nvmrcFilePath, 'utf8'),
+                nvmrcVersion = nvmrcContents.trim();
+
+            var nodeVersion = process.versions.node;
+
+            var nvmrcAndNodeVersionMatch = doNvmrcAndNodeVersionAppearToMatch(nvmrcVersion, nodeVersion);
+            if (!nvmrcAndNodeVersionMatch) {
+                showImportantMessage(
+                    'Error:'+
+                    '\n' +
+                    '\n' + 'Currently using Node JS @ ' + nodeVersion +
+                    '\n' + '.nvmrc file suggests to use Node JS @ ' + nvmrcVersion + ' (' + nvmrcFilePath + ')' +
+                    '\n' +
+                    '\n' + 'You may wish to run:' +
+                    '\n' + '    $ nvm use' +
+                    '\n' +
+                    '\n' + 'If you wish to bypass the Node JS version check, please run npmiq (npm-install-quick) with parameter --ignore-node-nvmrc-mismatch'
+                );
+                process.exit(1);
+            }
+        }
     }
 
     var spawnWrtProjectRoot = async function (app, params, options = {}) {
@@ -256,18 +366,18 @@ var npmInstallQuick = async function (options) {
         var sizeOccupiedByArchiveDirectory = await getSizeOfItemAtGivenPath(path.dirname(nodeModulesBackupFilePath));
         if (sizeOccupiedByArchiveDirectory === null) {
             warningOccurred = true;
-            showWarningMessage('Warning: The size occupied by the node_modules archive directory is NOT AVAILABLE');
+            showImportantMessage('Warning: The size occupied by the node_modules archive directory is NOT AVAILABLE');
         } else {
             console.log('Info: The size occupied by the node_modules archive directory is ' + humanReadableByteSize(sizeOccupiedByArchiveDirectory));
         }
 
         var freePartitionSpaceInBytes = await getFreeDiskSpaceOfPartitionForPath(path.dirname(nodeModulesBackupFilePath));
         if (freePartitionSpaceInBytes === null) {
-            showWarningMessage('Warning: Could not get information about the free disk space for the partition where node_modules archive is expected to be backed up');
+            showImportantMessage('Warning: Could not get information about the free disk space for the partition where node_modules archive is expected to be backed up');
             warningOccurred = true;
         } else {
             if (freePartitionSpaceInBytes < showDiskSpaceWarningBelow) {
-                showWarningMessage('Warning: The available disk space for the partition containing node_modules archive directory is ' + humanReadableByteSize(freePartitionSpaceInBytes));
+                showImportantMessage('Warning: The available disk space for the partition containing node_modules archive directory is ' + humanReadableByteSize(freePartitionSpaceInBytes));
                 warningOccurred = true;
             } else {
                 console.log('Info: The available disk space for the partition containing node_modules archive directory is ' + humanReadableByteSize(freePartitionSpaceInBytes));
@@ -281,7 +391,7 @@ var npmInstallQuick = async function (options) {
                 exitWithError('Error: package-lock.json file is not in sync with package.json');
             }
             warningOccurred = true;
-            showWarningMessage('Warning: Your package-lock.json is out of sync with package.json');
+            showImportantMessage('Warning: Your package-lock.json is out of sync with package.json');
         }
     } else {
         if (passedArguments['--must-have-package-lock']) {
@@ -298,17 +408,17 @@ var npmInstallQuick = async function (options) {
                 exitCode = await spawnWrtProjectRoot('npm', ['ci']);
                 if (exitCode !== 0) {
                     warningOccurred = true;
-                    showWarningMessage('Warning: "$ npm ci" command failed');
+                    showImportantMessage('Warning: "$ npm ci" command failed');
 
                     exitCode = await spawnWrtProjectRoot('npm', ['install', '--no-package-lock']);
                     if (exitCode !== 0) {
                         warningOccurred = true;
-                        showWarningMessage('Warning: "$ npm install --no-package-lock" command failed');
+                        showImportantMessage('Warning: "$ npm install --no-package-lock" command failed');
 
                         exitCode = await spawnWrtProjectRoot('npm', ['install']);
                         if (exitCode !== 0) {
                             warningOccurred = true;
-                            showWarningMessage('Warning: "$ npm install" command failed');
+                            showImportantMessage('Warning: "$ npm install" command failed');
                         }
                     }
                 }
@@ -319,12 +429,12 @@ var npmInstallQuick = async function (options) {
                     nodeModulesBackupFilePath = await getNodeModulesBackupFilePath({projectRoot, projectName, archiveDirectory});
                 } else {
                     warningOccurred = true;
-                    showWarningMessage('Warning: "$ npm install" command failed');
+                    showImportantMessage('Warning: "$ npm install" command failed');
 
                     exitCode = await spawnWrtProjectRoot('npm', ['install', '--no-package-lock']);
                     if (exitCode !== 0) {
                         warningOccurred = true;
-                        showWarningMessage('Warning: "$ npm install --no-package-lock" command failed');
+                        showImportantMessage('Warning: "$ npm install --no-package-lock" command failed');
                     }
                 }
             }
@@ -332,7 +442,7 @@ var npmInstallQuick = async function (options) {
             exitCode = await spawnWrtProjectRoot('npm', ['install', '--no-package-lock']);
             if (exitCode !== 0) {
                 warningOccurred = true;
-                showWarningMessage('Warning: "$ npm install --no-package-lock" command failed');
+                showImportantMessage('Warning: "$ npm install --no-package-lock" command failed');
             }
         }
 
@@ -340,7 +450,7 @@ var npmInstallQuick = async function (options) {
             exitCode = await backupNodeModulesIfRequired(nodeModulesBackupFilePath);
             if (exitCode) {
                 warningOccurred = true;
-                showWarningMessage('Warning: Could not backup the node_modules contents');
+                showImportantMessage('Warning: Could not backup the node_modules contents');
             }
         } else {
             exitWithError('Error: Could not run npm installation');
@@ -358,8 +468,6 @@ if (!module.parent) {
     npmInstallQuick({
         argv: process.argv,
         projectRoot: (function () {
-            var nodeParents = require('./utils/3rdparty/node-parents/node-parents.js');
-
             var cwd = process.cwd(),
                 pathsToLookForPackageJson = nodeParents(cwd);
 
