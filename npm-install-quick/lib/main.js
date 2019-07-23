@@ -131,6 +131,33 @@ var showWarningMessage = function (msg) {
     console.warn('    ' + '*'.repeat(msg.length + 4));
 };
 
+var showHelp = function () {
+    console.log([
+        '',
+        'Usage:',
+        '  npmiq [--<parameter-1>] [--<parameter-2>] [...]',
+        '',
+        'Alias:',
+        '  npm-install-quick',
+        '',
+        'Examples:',
+        '  npm-install-quick',
+        '  npmiq',
+        '  npmiq --must-have-package-lock',
+        '  npmiq --package-lock-must-be-in-sync-when-available',
+        '  npmiq --ignore-node-nvmrc-mismatch',
+        '  npmiq --help',
+        '',
+        'Options:',
+        '     --must-have-package-lock        package-lock.json file must exist',
+        '     --package-lock-must-be-in-sync-when-available',
+        '                                     If package-lock.json exists, then it must be in sync',
+        '                                     with package.json',
+        '  -h --help                          Show help',
+        ''
+    ].join('\n'));
+};
+
 var npmInstallQuick = async function (options) {
     var {
         argv = process.argv,
@@ -146,6 +173,11 @@ var npmInstallQuick = async function (options) {
             passedArguments[val] = val;
         }
     });
+
+    if (passedArguments['--help'] || passedArguments['-h']) {
+        showHelp();
+        process.exit(0);
+    }
 
     var spawnWrtProjectRoot = async function (app, params, options = {}) {
         var cwd = projectRoot,
