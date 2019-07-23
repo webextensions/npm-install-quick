@@ -29,12 +29,12 @@ indent_style = tab
 indent_size = 2
 
 [{*.markdown,*.md,*.mdown,*.mkd,*.mkdn,*.text}]     # https://superuser.com/questions/249436/file-extension-for-markdown-files/285878#285878
-trim_trailing_whitespace = disabled                 # https://stackoverflow.com/editing-help#linebreaks
+trim_trailing_whitespace = false                    # https://stackoverflow.com/editing-help#linebreaks
 
 [node_modules/**]
-charset = disabled
-end_of_line = disabled
-indent_size = disabled
-indent_style = disabled
-insert_final_newline = disabled
-trim_trailing_whitespace = disabled
+charset = unset
+end_of_line = unset
+indent_size = unset
+indent_style = unset
+insert_final_newline = false
+trim_trailing_whitespace = false

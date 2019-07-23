@@ -61,6 +61,8 @@ When you run `$ npm-install-quick` :
   Ensures that **package-lock.json** exists
 * `--package-lock-must-be-in-sync-when-available`  
   Ensures that **package.json** and **package-lock.json** are in sync (when available)
+* `--ignore-node-nvmrc-mismatch`  
+  If `.nvmrc` file exists (with simple number format), then, the current Node JS version in use must match it
 
 ## Important files and directories
 ### Code:
