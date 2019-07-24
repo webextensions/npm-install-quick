@@ -20,6 +20,7 @@ var lockedVersionsSatisfy = function (intendedDependencies = {}, installedDepend
         if (installedDependency && semver.satisfies(installedDependency.version, intendedDependency)) {
             return true;
         } else if (
+            installedDependency &&
             !semver.valid(installedDependency.version) &&
             !semver.valid(intendedDependency) &&
             installedDependency.version === intendedDependency
