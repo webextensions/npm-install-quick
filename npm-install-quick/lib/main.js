@@ -240,12 +240,36 @@ var npmInstallQuick = async function (options) {
         showDiskSpaceWarningBelow = 10 * 1024 * 1024 * 1024         // 10 GB, by default
     } = options;
     argv = argv || [];
+
     var passedArguments = {};
 
-    argv.forEach(function (val, index) {
-        if (index >= 2) {
-            passedArguments[val] = val;
+    // argv.forEach(function (val, index) {
+    //     if (index >= 2) {
+    //         passedArguments[val] = val;
+    //     }
+    // });
+    var passedArgumentsArr = [];
+    for (var i = 0; i < argv.length; i++) {
+        if (i >= 2) {
+            var param = argv[i];
+            if (param.indexOf('-') === 0) {
+                passedArgumentsArr.push({
+                    key: param,
+                    value: true
+                });
+            } else {
+                if (passedArgumentsArr.length) {
+                    if (passedArgumentsArr[passedArgumentsArr.length - 1].value === true) {
+                        var oldObToMutate = passedArgumentsArr[passedArgumentsArr.length - 1];
+                        oldObToMutate.value = param;
+                    }
+                }
+            }
         }
+    }
+
+    passedArgumentsArr.forEach(function (item) {
+        passedArguments[item.key] = item.value;
     });
 
     if (passedArguments['--help'] || passedArguments['-h']) {
