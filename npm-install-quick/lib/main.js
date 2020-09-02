@@ -218,6 +218,7 @@ var showHelp = function () {
         '  npmiq --must-have-package-lock',
         '  npmiq --package-lock-must-be-in-sync-when-available',
         '  npmiq --ignore-node-nvmrc-mismatch',
+        '  npmiq --archive-directory .cache',
         '  npmiq --help',
         '',
         'Options:',
@@ -227,6 +228,7 @@ var showHelp = function () {
         '                                     sync (when available)',
         '     --ignore-node-nvmrc-mismatch    If .nvmrc file exists (with simple number format), then',
         '                                     the current Node JS version in use must match it',
+        '     --archive-directory <path>      Use custom path for archive directory',
         '  -h --help                          Show help',
         ''
     ].join('\n'));
@@ -271,6 +273,17 @@ var npmInstallQuick = async function (options) {
     passedArgumentsArr.forEach(function (item) {
         passedArguments[item.key] = item.value;
     });
+
+    if (passedArguments['--archive-directory']) {
+        archiveDirectory = passedArguments['--archive-directory'];
+        if (typeof archiveDirectory === 'string') {
+            archiveDirectory = path.resolve(process.cwd(), archiveDirectory);
+        }
+    }
+    if (typeof archiveDirectory !== 'string') {
+        showImportantMessage('Error: The --archive-directory parameter needs to be a string');
+        process.exit(1);
+    }
 
     if (passedArguments['--help'] || passedArguments['-h']) {
         showHelp();
