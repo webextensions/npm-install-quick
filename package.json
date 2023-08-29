@@ -1,50 +1,50 @@
 {
-  "name": "npm-install-quick",
-  "version": "0.2.0",
-  "description": "Script for quick npm installation (archive node_modules directory and reuse). Helpful when you work on multiple branches.",
-  "engines": {
-    "node": ">=16"
-  },
-  "main": "npm-install-quick/lib/main.js",
-  "bin": {
-    "npm-install-quick": "npm-install-quick/lib/main.js",
-    "npmiq": "npm-install-quick/lib/main.js",
-    "quick-npm-install": "npm-install-quick/lib/main.js"
-  },
-  "directories": {
-    "test": "test"
-  },
-  "scripts": {
-    "lint": "eslint .",
-    "mocha": "mocha",
-    "test": "npm run lint && npm run mocha"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/webextensions/npm-install-quick.git"
-  },
-  "keywords": [
-    "npm",
-    "install",
-    "quick",
-    "reuse",
-    "node_modules",
-    "directory",
-    "folder",
-    "archive",
-    "package",
-    "package.json",
-    "package-lock.json",
-    "files"
-  ],
-  "author": "Priyank Parashar",
-  "license": "MIT",
-  "bugs": {
-    "url": "https://github.com/webextensions/npm-install-quick/issues"
-  },
-  "homepage": "https://github.com/webextensions/npm-install-quick#readme",
-  "devDependencies": {
-    "eslint": "^8.48.0",
-    "mocha": "^10.2.0"
-  }
+    "name": "npm-install-quick",
+    "version": "0.2.0",
+    "description": "Script for quick npm installation (archive node_modules directory and reuse). Helpful when you work on multiple branches.",
+    "engines": {
+        "node": ">=16"
+    },
+    "main": "npm-install-quick/lib/main.js",
+    "bin": {
+        "npm-install-quick": "npm-install-quick/lib/main.js",
+        "npmiq": "npm-install-quick/lib/main.js",
+        "quick-npm-install": "npm-install-quick/lib/main.js"
+    },
+    "directories": {
+        "test": "test"
+    },
+    "scripts": {
+        "lint": "eslint .",
+        "mocha": "mocha",
+        "test": "npm run lint && npm run mocha"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/webextensions/npm-install-quick.git"
+    },
+    "keywords": [
+        "npm",
+        "install",
+        "quick",
+        "reuse",
+        "node_modules",
+        "directory",
+        "folder",
+        "archive",
+        "package",
+        "package.json",
+        "package-lock.json",
+        "files"
+    ],
+    "author": "Priyank Parashar",
+    "license": "MIT",
+    "bugs": {
+        "url": "https://github.com/webextensions/npm-install-quick/issues"
+    },
+    "homepage": "https://github.com/webextensions/npm-install-quick#readme",
+    "devDependencies": {
+        "eslint": "^8.48.0",
+        "mocha": "^10.2.0"
+    }
 }
