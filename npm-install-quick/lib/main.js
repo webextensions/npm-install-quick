@@ -16,7 +16,7 @@ var nodeParents = require('./utils/3rdparty/node-parents/node-parents.js');
 var lockedVersionsSatisfy = function (intendedDependencies = {}, installedDependencies = {}) {
     var allVersionsSatisfied = Object.keys(intendedDependencies).every(function (key) {
         var intendedDependency = intendedDependencies[key],
-            installedDependency = installedDependencies[key];
+            installedDependency = installedDependencies[key] || installedDependencies[`node_modules/${key}`];
         if (installedDependency && semver.satisfies(installedDependency.version, intendedDependency)) {
             return true;
         } else if (
@@ -54,9 +54,10 @@ var arePackageJsonAndPackageLockJsonInSync = function (projectRoot) {
         process.exit(1);
     }
 
-    var flagLockedVersionsInSync =
-            lockedVersionsSatisfy(packageJson.dependencies, packageLockJson.dependencies) &&
-            lockedVersionsSatisfy(packageJson.devDependencies, packageLockJson.dependencies);
+    var flagLockedVersionsInSync = (
+        lockedVersionsSatisfy(packageJson.dependencies,    packageLockJson.dependencies || packageLockJson.packages) &&
+        lockedVersionsSatisfy(packageJson.devDependencies, packageLockJson.dependencies || packageLockJson.packages)
+    );
 
     return flagLockedVersionsInSync;
 };
