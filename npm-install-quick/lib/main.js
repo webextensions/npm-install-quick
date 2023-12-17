@@ -17,7 +17,25 @@ var lockedVersionsSatisfy = function (intendedDependencies = {}, installedDepend
     var allVersionsSatisfied = Object.keys(intendedDependencies).every(function (key) {
         var intendedDependency = intendedDependencies[key],
             installedDependency = installedDependencies[key] || installedDependencies[`node_modules/${key}`];
-        if (installedDependency && semver.satisfies(installedDependency.version, intendedDependency)) {
+        if (
+            installedDependency &&
+            (
+                semver.satisfies(installedDependency.version, intendedDependency) ||
+
+                // Allow remote URLs
+                // Ref: https://docs.npmjs.com/cli/v10/commands/npm-install#description
+                intendedDependency.indexOf('git+https://') === 0 ||
+                intendedDependency.indexOf('git+http://') === 0 ||
+                intendedDependency.indexOf('git+ssh://') === 0 ||
+                intendedDependency.indexOf('git://') === 0 ||
+                intendedDependency.indexOf('https://') === 0 ||
+                intendedDependency.indexOf('http://') === 0 ||
+                intendedDependency.indexOf('bitbucket:') === 0 ||
+                intendedDependency.indexOf('gist:') === 0 ||
+                intendedDependency.indexOf('github:') === 0 ||
+                intendedDependency.indexOf('gitlab:') === 0
+            )
+        ) {
             return true;
         } else if (
             installedDependency &&
