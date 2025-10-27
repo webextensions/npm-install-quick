@@ -518,7 +518,7 @@ var npmInstallQuick = async function (options) {
     if (warningOccurred) {
         console.log(' ? Please note the warning(s) mentioned above');
     }
-    console.log(' ✓ Success\n');
+    console.log(' ✔ Success\n');
 };
 
 if (!module.parent) {

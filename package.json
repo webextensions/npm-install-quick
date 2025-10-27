@@ -3,7 +3,7 @@
     "version": "0.3.0",
     "description": "Script for quick npm installation (archive node_modules directory and reuse). Helpful when you work on multiple branches.",
     "engines": {
-        "node": ">=18"
+        "node": ">=20"
     },
     "main": "npm-install-quick/lib/main.js",
     "bin": {
@@ -44,7 +44,7 @@
     },
     "homepage": "https://github.com/webextensions/npm-install-quick#readme",
     "devDependencies": {
-        "eslint": "=8.57.0",
-        "mocha": "^10.4.0"
+        "eslint": "=8.57.1",
+        "mocha": "^11.7.4"
     }
 }
