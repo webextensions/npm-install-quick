@@ -58,10 +58,10 @@ var lockedVersionsSatisfy = function (intendedDependencies = {}, installedDepend
 
 var arePackageJsonAndPackageLockJsonInSync = function (projectRoot) {
     var packageJson;
-    try { packageJson = require(path.resolve(projectRoot, 'package.json')); } catch (e) { /* do nothing */ }
+    try { packageJson = require(path.resolve(projectRoot, 'package.json')); } catch (err) { /* do nothing */ }
 
     var packageLockJson;
-    try { packageLockJson = require(path.resolve(projectRoot, 'package-lock.json')); } catch (e) { /* do nothing */ }
+    try { packageLockJson = require(path.resolve(projectRoot, 'package-lock.json')); } catch (err) { /* do nothing */ }
 
     if (!packageJson) {
         console.error('Error: package.json is not available or it is invalid');
@@ -407,7 +407,7 @@ var npmInstallQuick = async function (options) {
 
     var projectName = (function (projectRoot) {
         var packageJson;
-        try { packageJson = require(path.resolve(projectRoot, 'package.json')); } catch (e) { /* do nothing */ }
+        try { packageJson = require(path.resolve(projectRoot, 'package.json')); } catch (err) { /* do nothing */ }
         var projectName = (packageJson || {}).name || '';
         return projectName;
     }(projectRoot));

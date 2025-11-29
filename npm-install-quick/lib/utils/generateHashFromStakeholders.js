@@ -34,15 +34,15 @@ var generateSerializedStakeHolders = async function (options) {
     var { projectRoot } = options;
 
     var packageJson;
-    try { packageJson = requireNoCache(path.resolve(projectRoot, 'package.json')); } catch (e) { /* do nothing */ }
+    try { packageJson = requireNoCache(path.resolve(projectRoot, 'package.json')); } catch (err) { /* do nothing */ }
 
     var packageLockJson;
-    try { packageLockJson = requireNoCache(path.resolve(projectRoot, 'package-lock.json')); } catch (e) { /* do nothing */ }
+    try { packageLockJson = requireNoCache(path.resolve(projectRoot, 'package-lock.json')); } catch (err) { /* do nothing */ }
 
     var nodeVersion = process.versions.node;
 
     var strNpmrc;
-    try { strNpmrc = await readFile(path.resolve(projectRoot, '.npmrc'), 'utf8'); } catch (e) { /* do nothing */ }
+    try { strNpmrc = await readFile(path.resolve(projectRoot, '.npmrc'), 'utf8'); } catch (err) { /* do nothing */ }
 
     var stakeholders = {};
     if (packageJson) {
