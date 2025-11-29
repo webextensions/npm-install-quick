@@ -18,7 +18,9 @@ module.exports = [
         rules: {
             'indent': ['error', 4, { 'SwitchCase': 1 }],
             'linebreak-style': ['error', 'unix'],
-            'no-unused-vars': ['error', { 'argsIgnorePattern': '^_', 'caughtErrorsIgnorePattern': '^_' }],
+            'no-unused-vars': ['error', {
+                caughtErrors: 'none'
+            }],
             'semi': ['error', 'always']
         }
     }
